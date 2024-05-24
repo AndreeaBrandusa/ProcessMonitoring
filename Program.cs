@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.ComponentModel;
-using System.ServiceProcess;
+using Microsoft.Extensions.Logging;
 
 namespace ProcessMonitoring
 {
@@ -10,75 +9,90 @@ namespace ProcessMonitoring
         private string? name;
         private int maxLifetime;
         private int monitoringFrequency;
+        private static ILogger logger;
 
         void BindToRunningProcesses()
         {
             // Get the process with the specified name
             Process? process = Process.GetProcessesByName(name).FirstOrDefault();
 
-            foreach (var p in Process.GetProcessesByName(name))
+            if (process == null)
             {
-                if (process is not null)
-                {
-                    Console.Write("Process " + name + " was found.\n");
-                }
-                else
-                {
-                    Console.Write("No process with the name " + name + " was found.\n");
-                }
+                logger.LogWarning("No process with the name {} was found.\n", name);
+                return;
+            }else
+            {
+                logger.LogInformation("Process {} was found.\n", name);
             }
         }
 
         void GetProcess()
         {
+            BindToRunningProcesses();
+
             foreach (var p in Process.GetProcessesByName(name))
             {
                 int runtime = Convert.ToInt32((DateTime.Now - p.StartTime).ToString("mm"));
-                if (runtime > maxLifetime)
+                if (runtime >= maxLifetime)
                 {
                     p.Kill();
-                    Console.Write("Process " + p.ProcessName + " has been killed\n");
+                    logger.LogInformation("Process {} has been killed\n", p.ProcessName);
                 }
                 else
                 {
-                    Console.Write("Process " + p.ProcessName + " has been running for " + (DateTime.Now - p.StartTime).ToString("mm") + "minutes\n");
+                    logger.LogInformation("Process {} has been running for {} minutes\n", 
+                        p.ProcessName, (DateTime.Now - p.StartTime).ToString("mm"));
                 }
             }
         }
 
-        async Task ListenForProcessAsync()
+        async Task KeyPressed()
         {
-            Console.WriteLine("Press q to stop listening");
+            logger.LogInformation("Press q to stop listening");
             do
             {
-                while (!Console.KeyAvailable)
-                {
-                    var timer = new PeriodicTimer(TimeSpan.FromMinutes(monitoringFrequency));
-
-                    do
-                    {
-                        GetProcess();
-                    } while (await timer.WaitForNextTickAsync());
-                }
+                await Task.Delay(1);
             } while (Console.ReadKey(true).Key != ConsoleKey.Q);
+        }
+
+        async Task ListenForProcessAsync()
+        {
+            var timer = new PeriodicTimer(TimeSpan.FromMinutes(monitoringFrequency));
+
+            do
+            {
+                GetProcess();
+            } while (await timer.WaitForNextTickAsync());
         } 
 
-        static async Task Main()
+        static async Task Main(string[] args)
         {
-            MyProcess myProcess = new();
-           
-            // Reading process details
-            Console.Write("Enter Process Name: ");
-            myProcess.name = Console.ReadLine();
+            using ILoggerFactory factory = LoggerFactory.Create(builder => 
+                builder.AddConsole(c =>
+                {
+                    c.TimestampFormat = "[dd.MM.yy] [HH:mm:ss] ";
+                }));
 
-            Console.Write("Enter maximum lifetime (in minutes): ");
-            myProcess.maxLifetime = Convert.ToInt32(Console.ReadLine());
+            logger = factory.CreateLogger<MyProcess>();
 
-            Console.Write("Enter monitoring frequency (in minutes): ");
-            myProcess.monitoringFrequency = Convert.ToInt32(Console.ReadLine());
+            MyProcess myProcess = new()
+            {
+                // Reading process details
+                name = args[0],
+                maxLifetime = Convert.ToInt32(args[1]),
+                monitoringFrequency = Convert.ToInt32(args[2])
+            };
 
-            //myProcess.BindToRunningProcesses();
-            await myProcess.ListenForProcessAsync();
+            if (args.Length < 3)
+            {
+                logger.LogError("Not enough args");
+                return;
+            }
+            
+
+            var keyTask = myProcess.KeyPressed();
+            var processTask = myProcess.ListenForProcessAsync();
+            await Task.WhenAny(keyTask, processTask);
         }
     }
 }

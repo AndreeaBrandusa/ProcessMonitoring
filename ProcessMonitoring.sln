@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.34916.146
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessMonitoring", "ProcessMonitoring.csproj", "{1E60E64D-B5A3-4E65-8CCA-F2186E23D6C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessMonitoring", ".\ProcessMonitoring\ProcessMonitoring.csproj", "{1E60E64D-B5A3-4E65-8CCA-F2186E23D6C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessMonitoring.nUnitTests", "..\ProcessMonitoring.nUnitTests\ProcessMonitoring.nUnitTests.csproj", "{E4E53AA0-D2D3-43BA-BE48-132FE6B06625}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessMonitoring.nUnitTests", ".\ProcessMonitoring.nUnitTests\ProcessMonitoring.nUnitTests.csproj", "{E4E53AA0-D2D3-43BA-BE48-132FE6B06625}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

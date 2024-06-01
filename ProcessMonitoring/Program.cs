@@ -3,35 +3,34 @@ using Microsoft.Extensions.Logging;
 
 namespace ProcessMonitoring
 {
-    public class MyProcess(string? name, int maxLifetime, int monitoringFrequency, ILogger logger)
+    public class MyProcess(string name, int maxLifetime, int monitoringFrequency, ILogger logger, IProcessHandler processHandler)
     {
-        private readonly string? name = name;
+        private readonly string name = name;
         private readonly int maxLifetime = maxLifetime;
         private readonly int monitoringFrequency = monitoringFrequency;
         private readonly ILogger logger = logger;
+        private readonly IProcessHandler processHandler = processHandler;
 
-        public Process[] GetProcesses()
+        public IProcessWrapper[] GetProcesses()
         {
             // Get the process with the specified name
-            Process[] processes = Process.GetProcessesByName(name);
+            IProcessWrapper[] processes = processHandler.GetProcessesByName(name);
 
-            if (processes == null)
+            if (processes == null || processes.Length == 0)
             {
                 logger.LogWarning("No process with the name {} was found.\n", name);
                 return [];
             }
 
-            logger.LogInformation("Process {} was found.\n", name);
+            logger.LogInformation("Process {} was found {} times.\n", name, processes.Length);
             return processes;
         }
 
-        public void VerifyProcesses()
+        public void VerifyProcesses(IProcessWrapper[] processes)
         {
-            Process[] processes = GetProcesses();
-
             foreach (var p in processes)
             {
-                int runtime = Convert.ToInt32((DateTime.Now - p.StartTime).ToString("mm"));
+                int runtime = Convert.ToInt32((DateTime.Now - p.ProcessStartTime).ToString("mm"));
                 if (runtime >= maxLifetime)
                 {
                     p.Kill();
@@ -40,7 +39,7 @@ namespace ProcessMonitoring
                 else
                 {
                     logger.LogInformation("Process {} has been running for {} minutes\n", 
-                        p.ProcessName, (DateTime.Now - p.StartTime).ToString("mm"));
+                        p.ProcessName, (DateTime.Now - p.ProcessStartTime).ToString("mm"));
                 }
             }
         }
@@ -57,10 +56,11 @@ namespace ProcessMonitoring
         public async Task MonitorProcessesAsync()
         {
             var timer = new PeriodicTimer(TimeSpan.FromMinutes(monitoringFrequency));
-
+            
             do
             {
-                VerifyProcesses();
+                IProcessWrapper[] processes = GetProcesses();
+                VerifyProcesses(processes);
             } while (await timer.WaitForNextTickAsync());
         }
 
@@ -75,10 +75,17 @@ namespace ProcessMonitoring
             return factory.CreateLogger<MyProcess>();
         }
 
-        static async Task Main(string[] args)
+        public async Task StartProcessesAsync()
+        {
+            var keyTask = KeyPressed();
+            var processTask = MonitorProcessesAsync();
+
+            await Task.WhenAny(keyTask, processTask);
+        }
+
+        public static async Task Main(string[] args)
         {
             ILogger logger = CreateLogger();
-            MyProcess myProcess = new(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2]), logger);
 
             if (args.Length < 3)
             {
@@ -86,10 +93,10 @@ namespace ProcessMonitoring
                 return;
             }
 
-            var keyTask = myProcess.KeyPressed();
-            var processTask = myProcess.MonitorProcessesAsync();
+            ProcessHandler handler = new ProcessHandler();
+            MyProcess myProcess = new(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2]), logger, handler);
 
-            await Task.WhenAny(keyTask, processTask);
+            await myProcess.StartProcessesAsync();
         }
     }
 }

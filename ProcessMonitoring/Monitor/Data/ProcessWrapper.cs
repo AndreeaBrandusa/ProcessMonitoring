@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace ProcessMonitoring
+namespace ProcessMonitoring.Monitor.Data
 {
     public class ProcessWrapper(Process process) : IProcessWrapper
     {

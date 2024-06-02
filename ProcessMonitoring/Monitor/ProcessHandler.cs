@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telerik.JustMock.AutoMock.Ninject.Infrastructure.Language;
+﻿using System.Diagnostics;
+using ProcessMonitoring.Monitor.Data;
 
-namespace ProcessMonitoring
+namespace ProcessMonitoring.Monitor
 {
     public class ProcessHandler : IProcessHandler
     {

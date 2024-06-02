@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Moq;
 using System;
 using System.Diagnostics;
@@ -11,12 +13,14 @@ namespace ProcessMonitoring.nUnitTests
     {
         private Mock<ILogger> mockLogger;
         private Mock<IProcessHandler> mockProcessHandler;
+        private Mock<IConsoleWrapper> mockConsoleWrapper;
 
         [SetUp]
         public void Setup()
         {
             mockLogger = new Mock<ILogger>();
             mockProcessHandler = new Mock<IProcessHandler>();
+            mockConsoleWrapper = new Mock<IConsoleWrapper>();
         }
 
         [Test]
@@ -29,7 +33,7 @@ namespace ProcessMonitoring.nUnitTests
 
             var mockProcessWrapper = new Mock<IProcessWrapper>();
             var mockProcesses = new List<IProcessWrapper> { mockProcessWrapper.Object };
-            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object);
+            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object, mockConsoleWrapper.Object);
             mockProcessHandler.Setup(p => p.GetProcessesByName(processName)).Returns([.. mockProcesses]);
 
             // Act
@@ -46,7 +50,7 @@ namespace ProcessMonitoring.nUnitTests
             var maxLifetime = 1;
             var monitoringFrequency = 1;
 
-            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object);
+            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object, mockConsoleWrapper.Object);
             mockProcessHandler.Setup(p => p.GetProcessesByName(processName)).Returns([]);
 
             // Act
@@ -66,7 +70,7 @@ namespace ProcessMonitoring.nUnitTests
 
             var mockProcessWrapper = new Mock<IProcessWrapper>();
             var mockProcesses = new List<IProcessWrapper> { mockProcessWrapper.Object };
-            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object);
+            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object, mockConsoleWrapper.Object);
 
             mockProcessWrapper.Setup(p => p.ProcessStartTime).Returns(DateTime.Now.Subtract(new TimeSpan(0, 2, 0)));
             mockProcessWrapper.Setup(p => p.ProcessName).Returns(processName);
@@ -89,7 +93,7 @@ namespace ProcessMonitoring.nUnitTests
 
             var mockProcessWrapper = new Mock<IProcessWrapper>();
             var mockProcesses = new List<IProcessWrapper> { mockProcessWrapper.Object };
-            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object);
+            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object, mockConsoleWrapper.Object);
 
             mockProcessWrapper.Setup(p => p.ProcessStartTime).Returns(DateTime.Now.Subtract(new TimeSpan(0, 2, 0)));
             mockProcessWrapper.Setup(p => p.ProcessName).Returns(processName);
@@ -103,9 +107,20 @@ namespace ProcessMonitoring.nUnitTests
         }
 
         [Test]
-        public void KeyPressed_StoppesOnQPressed()
+        public async Task KeyPressed_ListensForCorrectKey()
         {
+            var processName = "notepad";
+            var maxLifetime = 5;
+            var monitoringFrequency = 1;
 
+            var process = new MyProcess(processName, maxLifetime, monitoringFrequency, mockLogger.Object, mockProcessHandler.Object, mockConsoleWrapper.Object);
+
+            mockConsoleWrapper.SetupSequence(c => c.ReadKey(true))
+                              .Returns(new ConsoleKeyInfo('a', ConsoleKey.Q, false, false, false))
+                              .Returns(new ConsoleKeyInfo('q', ConsoleKey.Q, false, false, false));
+            await process.KeyPressed();
+
+            mockConsoleWrapper.Verify(p => p.ReadKey(true), Times.Once);
         }
     }
 }

@@ -3,13 +3,14 @@ using Microsoft.Extensions.Logging;
 
 namespace ProcessMonitoring
 {
-    public class MyProcess(string name, int maxLifetime, int monitoringFrequency, ILogger logger, IProcessHandler processHandler)
+    public class MyProcess(string name, int maxLifetime, int monitoringFrequency, ILogger logger, IProcessHandler processHandler, IConsoleWrapper consoleWrapper)
     {
         private readonly string name = name;
         private readonly int maxLifetime = maxLifetime;
         private readonly int monitoringFrequency = monitoringFrequency;
         private readonly ILogger logger = logger;
         private readonly IProcessHandler processHandler = processHandler;
+        private readonly IConsoleWrapper consoleWrapper = consoleWrapper;
 
         public IProcessWrapper[] GetProcesses()
         {
@@ -44,13 +45,13 @@ namespace ProcessMonitoring
             }
         }
 
-        private async Task KeyPressed()
+        public async Task KeyPressed()
         {
             logger.LogInformation("Press q to stop listening");
             do
             {
                 await Task.Delay(1);
-            } while (Console.ReadKey(true).Key != ConsoleKey.Q);
+            } while (consoleWrapper.ReadKey(true).Key != ConsoleKey.Q);
         }
 
         public async Task MonitorProcessesAsync()
@@ -93,8 +94,9 @@ namespace ProcessMonitoring
                 return;
             }
 
-            ProcessHandler handler = new ProcessHandler();
-            MyProcess myProcess = new(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2]), logger, handler);
+            ProcessHandler handler = new();
+            ConsoleWrapper consoleWrapper = new();
+            MyProcess myProcess = new(args[0], Convert.ToInt32(args[1]), Convert.ToInt32(args[2]), logger, handler, consoleWrapper);
 
             await myProcess.StartProcessesAsync();
         }

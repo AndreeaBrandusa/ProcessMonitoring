@@ -4,7 +4,7 @@ using ProcessMonitoring.Monitor.Data;
 
 namespace ProcessMonitoring.Monitor
 {
-    public class ProcessContainer(IProcessHandler processHandler)
+    public class ProcessContainer(IProcessHandler processHandler) : IProcessContainer
     {
         private readonly IProcessHandler processHandler = processHandler;
         public IProcessWrapper[] GetProcesses(string name)

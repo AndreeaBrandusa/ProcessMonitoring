@@ -4,25 +4,29 @@ using ProcessMonitoring.Monitor.Data;
 
 namespace ProcessMonitoring.Monitor
 {
-    public class ProcessesMonitor(MonitorInputData monitorInputData, IProcessHandler processHandler)
+    public class ProcessesMonitor(MonitorInputData monitorInputData, IProcessContainer processContainer)
     {
         private readonly MonitorInputData monitorInputData = monitorInputData;
-        private readonly ProcessContainer processContainer = new(processHandler);
+        private readonly IProcessContainer processContainer = processContainer;
+        private CancellationToken cancellationToken;
+
+        public CancellationToken Token { get => cancellationToken; set => cancellationToken = value; }
+
 
         public void VerifyProcesses(IProcessWrapper[] processes)
         {
-            foreach (var p in processes)
+            foreach (var process in processes)
             {
-                int runtime = Convert.ToInt32((DateTime.Now - p.ProcessStartTime).ToString("mm"));
+                int runtime = Convert.ToInt32((DateTime.Now - process.ProcessStartTime).ToString("mm"));
                 if (runtime >= monitorInputData.MaxLifetime)
                 {
-                    p.Kill();
-                    ConsoleLogger.Logger.LogInformation("Process {} has been killed\n", p.ProcessName);
+                    process.Kill();
+                    ConsoleLogger.Logger.LogInformation("Process {} has been killed\n", process.ProcessName);
                 }
                 else
                 {
                     ConsoleLogger.Logger.LogInformation("Process {} has been running for {} minutes\n",
-                        p.ProcessName, (DateTime.Now - p.ProcessStartTime).ToString("mm"));
+                        process.ProcessName, (DateTime.Now - process.ProcessStartTime).ToString("mm"));
                 }
             }
         }
@@ -37,7 +41,7 @@ namespace ProcessMonitoring.Monitor
                 VerifyProcesses(processes);
 
                 await Task.Delay(1);
-            } while (await timer.WaitForNextTickAsync());
+            } while (await timer.WaitForNextTickAsync(cancellationToken));
         }
     }
 }

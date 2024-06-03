@@ -14,9 +14,10 @@ namespace ProcessMonitoring
         {
             ConsoleWrapper consoleWrapper = new();
             ProcessHandler processHandler = new();
+            ProcessContainer processContainer = new(processHandler);
 
             consoleListener = new(consoleWrapper);
-            processesMonitor = new(monitorInputData, processHandler);
+            processesMonitor = new(monitorInputData, processContainer);
 
             var keyTask = consoleListener.ListenForCloseKeyAsync();
             var processTask = processesMonitor.MonitorProcessesAsync();

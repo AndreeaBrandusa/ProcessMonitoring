@@ -5,7 +5,7 @@ using ProcessMonitoring.Monitor.Data;
 
 namespace ProcessMonitoring.nUnitTests
 {
-    internal class ProcessContainerTests
+    public class ProcessContainerTests
     {
         private Mock<IProcessHandler> mockProcessHandler;
         private Mock<IProcessWrapper> mockProcessWrapper;
@@ -24,7 +24,7 @@ namespace ProcessMonitoring.nUnitTests
             var mockProcesses = new List<IProcessWrapper> { mockProcessWrapper.Object };
             
             mockProcessHandler.Setup(p => p.GetProcessesByName(processName)).Returns([.. mockProcesses]);
-            ProcessContainer processContainer = new(mockProcessHandler.Object);
+            ProcessesContainer processContainer = new(mockProcessHandler.Object);
 
             var result = processContainer.GetProcesses(processName);
 
@@ -37,7 +37,7 @@ namespace ProcessMonitoring.nUnitTests
             var processName = "notepad";
 
             mockProcessHandler.Setup(p => p.GetProcessesByName(processName)).Returns([]);
-            ProcessContainer processContainer = new(mockProcessHandler.Object);
+            ProcessesContainer processContainer = new(mockProcessHandler.Object);
 
             var result = processContainer.GetProcesses(processName);
 

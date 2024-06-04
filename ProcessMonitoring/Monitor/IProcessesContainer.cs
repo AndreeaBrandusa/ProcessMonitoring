@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProcessMonitoring.Monitor.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace ProcessMonitoring.Monitor
 {
-    public interface IPeriodicTimer
+    public interface IProcessesContainer
     {
-        ValueTask<bool> WaitForNextTickAsync(CancellationToken cancellationToken = default);
+        IProcessWrapper[] GetProcesses(string name);
     }
 }

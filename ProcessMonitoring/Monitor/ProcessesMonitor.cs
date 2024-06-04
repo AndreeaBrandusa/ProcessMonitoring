@@ -4,16 +4,26 @@ using ProcessMonitoring.Monitor.Data;
 
 namespace ProcessMonitoring.Monitor
 {
-    public class ProcessesMonitor(MonitorInputData monitorInputData, IProcessContainer processContainer)
+    public class ProcessesMonitor(MonitorInputData monitorInputData, IProcessesContainer processContainer)
     {
         private readonly MonitorInputData monitorInputData = monitorInputData;
-        private readonly IProcessContainer processContainer = processContainer;
+        private readonly IProcessesContainer processContainer = processContainer;
         private CancellationToken cancellationToken;
 
         public CancellationToken Token { get => cancellationToken; set => cancellationToken = value; }
 
+        public async Task MonitorProcessesAsync()
+        {
+            var timer = new PeriodicTimer(TimeSpan.FromMinutes(monitorInputData.MonitoringFrequency));
 
-        public void VerifyProcesses(IProcessWrapper[] processes)
+            do
+            {
+                IProcessWrapper[] processes = processContainer.GetProcesses(monitorInputData.Name);
+                VerifyProcesses(processes);
+            } while (await timer.WaitForNextTickAsync(cancellationToken));
+        }
+
+        private void VerifyProcesses(IProcessWrapper[] processes)
         {
             foreach (var process in processes)
             {
@@ -29,19 +39,6 @@ namespace ProcessMonitoring.Monitor
                         process.ProcessName, (DateTime.Now - process.ProcessStartTime).ToString("mm"));
                 }
             }
-        }
-
-        public async Task MonitorProcessesAsync()
-        {
-            var timer = new PeriodicTimer(TimeSpan.FromMinutes(monitorInputData.MonitoringFrequency));
-
-            do
-            {
-                IProcessWrapper[] processes = processContainer.GetProcesses(monitorInputData.Name);
-                VerifyProcesses(processes);
-
-                await Task.Delay(1);
-            } while (await timer.WaitForNextTickAsync(cancellationToken));
         }
     }
 }
